@@ -48,6 +48,20 @@ mat_t* dotMat(mat_t* a, mat_t* b);
 
 vec_t* dotMatVec(mat_t* a, vec_t* b);
 
+mat_t* gaussElim(mat_t* a);
+
+vec_t* upperSolve(mat_t* A, vec_t* b);
+
+vec_t* solve(mat_t* a, vec_t* b);
+
+mat_t* identity(int rows, int cols);
+
+mat_t* joinMat(mat_t* a, mat_t* b);
+
+mat_t* splitMat(mat_t* a, int col1, int col2);
+
+mat_t* inverse(mat_t* m);
+
 void printMat(mat_t* m, bool frac);
 
 #endif

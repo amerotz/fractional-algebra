@@ -146,6 +146,116 @@ vec_t* dotMatVec(mat_t* a, vec_t* b){
 	return v;
 }
 
+mat_t* gaussElim(mat_t* a){
+	mat_t* m = copyMat(a); 
+	for(int i = 0; i < a->rows; i++){
+		vec_t* r = getRow(m, i);
+		num_t* pivot = getNum(r, i);
+		for(int j = i+1; j < a->rows; j++){
+			vec_t* s = getRow(m, j);
+			num_t* coeff = div(getNum(s, i), pivot);
+			vec_t* res = subVec(s, mulVecScalar(r, coeff));
+			setRow(m, j, res);
+		}
+	}
+	return m;
+}
+
+mat_t* jordan(mat_t* a){
+	mat_t* m = copyMat(a);
+	int col = a->cols-1;
+	for(int i = m->rows-1; i > -1; i--){
+		vec_t* r = getRow(m, i);
+		num_t* pivot = getNum(r, col);
+		for(int j = i-1; j > -1; j--){
+			vec_t* s = getRow(m, j);
+			num_t* coeff = div(getNum(s, col), pivot);
+			vec_t* res = subVec(s, mulVecScalar(r, coeff));
+			setRow(m, j, res);
+		}
+		col--;
+	}
+	col = a->cols-1;
+	for(int i = m->rows-1; i > -1; i--){
+		vec_t* r = getRow(m, i);
+		num_t* pivot = getNum(r, col);
+		if(!zero(pivot)) setRow(m, i, divVecScalar(r, pivot));
+		col--;
+	}
+	return m;
+}
+
+vec_t* upperSolve(mat_t* A, vec_t* b){
+	vec_t* x = emptyVec(b->dim);
+	int n = b->dim-1;
+	setNum(x, n, div(getNum(b, n), matGet(A, n, n)));
+	for(int i = n; i > -1; i--){
+		num_t* sum = createNum(0, 1);
+		for(int j = i+1; j <= n; j++){
+			sum = add(sum, mul(matGet(A, i, j), getNum(x, j)));
+		}
+		setNum(x, i, div(sub(getNum(b, i), sum), matGet(A, i, i)));
+	}
+	return x;
+}
+
+vec_t* solve(mat_t* a, vec_t* b){
+	mat_t* A = joinCol(a, b);
+	A = gaussElim(A);
+	vec_t* B = removeCol(A, A->cols-1);
+	return upperSolve(A, B);
+}
+
+mat_t* identity(int rows, int cols){
+	mat_t* m = emptyMat(rows, cols);
+	for(int i = 0; i < m->rows; i++) matSet(m, createNum(1, 1), i, i);
+	return m;
+}
+
+mat_t* joinMat(mat_t* a, mat_t* b){
+	int r = a->rows > b->rows ? a->rows : b->rows;
+	int c = a->cols + b->cols;
+	mat_t* m = emptyMat(r, c);
+	for(int i = 0; i < a->rows; i++){
+		for(int j = 0; j < a->cols; j++){
+			matSet(m, matGet(a, i, j), i, j);
+		}
+	}
+	for(int i = 0; i < b->rows; i++){
+		for(int j = 0; j < b->cols; j++){
+			matSet(m, matGet(b, i, j), i, j+a->cols);
+		}
+	}
+	return m;
+}
+
+mat_t* splitMat(mat_t* a, int col1, int col2){
+	mat_t* m = emptyMat(a->rows, col2-col1);
+	for(int i = 0; i < a->rows; i++){
+		for(int j = col1; j < col2; j++){
+			matSet(m, matGet(a, i, j), i, j-col1);
+		}
+	}
+	return m;
+}
+
+mat_t* inverse(mat_t* m){
+	mat_t* I = identity(m->rows, m->cols);
+
+	mat_t* M = joinMat(m, I);
+	M = gaussElim(M);
+
+	mat_t* inv = splitMat(M, M->cols/2, M->cols);
+	mat_t* src = splitMat(M, 0, M->cols/2);
+
+	M = joinMat(inv, src);
+	M = jordan(M);
+	mat_t* res = splitMat(M, 0, M->cols/2);
+	return res;
+}
+
+
+
 void printMat(mat_t* m, bool frac){
 	printf("{");
 	int i = 0;
